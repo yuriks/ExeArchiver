@@ -1,0 +1,10 @@
+*.swp
+
+ExeArchiver.opensdf
+ExeArchiver.sdf
+ExeArchiver.suo
+ipch/
+*.vcxproj.user
+
+Debug/
+Release/
