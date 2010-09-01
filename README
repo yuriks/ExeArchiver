@@ -1,0 +1,6 @@
+ExeArchiver is a tool to create and append archives of binary files, as well
+as a library to read them out from a running program. It's useful if you want
+to avoid shipping several files to your users, allowing you to pack all needed
+resource in a single file.
+
+The archiver (exear) is GPL licensed, while the library (libexear) is MIT licensed.
