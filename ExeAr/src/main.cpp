@@ -32,8 +32,6 @@ uint32_t get_file_size(std::ifstream& f)
 
 	f.seekg(old_pos);
 
-	std::cerr << "Tamanho: " << size << std::endl;
-
 	return size;
 }
 
