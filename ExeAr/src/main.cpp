@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <algorithm>
 #include <cstdint>
 
 uint32_t get_file_size(std::ifstream& f)
@@ -125,6 +126,8 @@ int main(int argc, char* argv[])
 
 	write_u32(outfile, cur_offset); // Contents size
 	cur_offset = 0;
+
+	std::sort(file_list.begin(), file_list.end());
 
 	for (FileList::const_iterator i = file_list.begin(); i != file_list.end(); ++i)
 	{
