@@ -137,10 +137,9 @@ int main(int argc, char* argv[])
 
 		cur_offset += 2 + i->first.length() + 4;
 	}
-
 	write_u16(outfile, 0xFFFF); // End of file list
 
-	write_u32(outfile, cur_offset); // File list size
+	write_u32(outfile, cur_offset + 2); // File list size + terminating word
 
 	write_u16(outfile, 0); // Version
 	write_u16(outfile, 0x0001); // Endianess
