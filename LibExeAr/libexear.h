@@ -28,6 +28,20 @@
 extern "C" {
 #endif
 
+struct ExeArInfo;
+
+/** Opens the executable and reads archive info from it.
+ *
+ * @param fname The path to the executable, if NULL it'll be auto-detected.
+ */
+struct ExeArInfo* exear_open(const char* fname);
+
+/** Closes handlers and frees all data of ar_info. ar_info shall not be used after calling this function.
+ *
+ * @param ar_info The ExeArInfo struct to free.
+ */
+void exear_close(struct ExeArInfo* ar_info);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
