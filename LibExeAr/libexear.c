@@ -206,6 +206,49 @@ void exear_close(struct ExeArInfo* ar_info)
 	free(ar_info);
 }
 
+static uint32_t find_file_offset(struct ExeArInfo* ar_info, const char* path)
+{
+	int file_low = 0;
+	int file_high = ar_info->num_files - 1;
+
+	while (file_low != file_high)
+	{
+		int file_mid = (file_low + file_high) / 2;
+		int cmp = strcmp(path, ar_info->files[file_mid]->name);
+
+		if (cmp < 0)
+			file_high = file_mid - 1;
+		else if (cmp > 0)
+			file_low = file_mid + 1;
+		else
+			file_low = file_high = file_mid;
+	}
+
+	if (strcmp(ar_info->files[file_low]->name, path) == 0)
+		return ar_info->files[file_low]->offset;
+	else
+		return -1;
+}
+
+FILE* exear_open_file(struct ExeArInfo* ar_info, const char* path, uint32_t* size)
+{
+	uint32_t file_off;
+
+	if (ar_info == NULL)
+		return NULL;
+
+	file_off = find_file_offset(ar_info, path);
+
+	if (file_off == -1)
+		return NULL;
+
+	fsetpos(ar_info->f, &ar_info->data_start);
+	fseek(ar_info->f, file_off, SEEK_CUR);
+
+	*size = read_u32(ar_info->f);
+	return ar_info->f;
+}
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

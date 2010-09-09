@@ -24,6 +24,9 @@
 #ifndef EXEARCHIVER_LIBEXEAR_H
 #define EXEARCHIVER_LIBEXEAR_H
 
+#include <stdio.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,11 +39,25 @@ struct ExeArInfo;
  */
 struct ExeArInfo* exear_open(const char* fname);
 
-/** Closes handlers and frees all data of ar_info. ar_info shall not be used after calling this function.
+/** Closes handlers and frees all data of ar_info. ar_info shall not be used
+ * after calling this function.
  *
  * @param ar_info The ExeArInfo struct to free.
  */
 void exear_close(struct ExeArInfo* ar_info);
+
+/** Returns a FILE and the size of the data corresponding to the specified
+ * path. The FILE should not be closed.
+ *
+ * @param ar_info The ExeArInfo struct.
+ * @param path The path of the file to open.
+ * @param size Pointer to integer that will hold the size of the file.
+ *             Unchanged if path isn't found.
+ *
+ * @return A FILE object seeked to the correct position for reading, or NULL
+ *         if path wasn't found.
+ */
+FILE* exear_open_file(struct ExeArInfo* ar_info, const char* path, uint32_t* size);
 
 #ifdef __cplusplus
 } /* extern "C" */
