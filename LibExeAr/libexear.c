@@ -122,7 +122,7 @@ static uint32_t read_u32(FILE* f)
 struct ExeArInfo* exear_open(const char* fname)
 {
 	struct ExeArInfo* ar_info = NULL;
-	char buf[10];
+	char buf[11];
 	uint32_t file_list_size;
 	int i;
 
@@ -144,7 +144,7 @@ struct ExeArInfo* exear_open(const char* fname)
 	}
 
 	fseek(ar_info->f, -10, SEEK_END);
-	fread(buf, sizeof(char), 10, ar_info->f);
+	buf[fread(buf, sizeof(char), 10, ar_info->f)] = '\0';
 	if (strcmp(buf, "EXEARCHIVE") != 0)
 	{
 		goto error;
@@ -162,11 +162,11 @@ struct ExeArInfo* exear_open(const char* fname)
 		goto error;
 	}
 
-	fseek(ar_info->f, -2 -4 -4, SEEK_CUR);
-	ar_info->ar_size = read_u32(ar_info->f);
+	fseek(ar_info->f, -2 -4, SEEK_CUR);
 	file_list_size = read_u32(ar_info->f);
 
-	fseek(ar_info->f, -4 -file_list_size, SEEK_CUR);
+	fseek(ar_info->f, -4 -file_list_size -4, SEEK_CUR);
+	ar_info->ar_size = read_u32(ar_info->f);
 	ar_info->num_files = read_u16(ar_info->f);
 
 	ar_info->files = (struct ExeArFileInfo**)malloc(sizeof(*ar_info->files) * ar_info->num_files);
