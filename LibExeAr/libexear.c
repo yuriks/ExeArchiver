@@ -290,7 +290,10 @@ size_t exear_fread(void *ptr, size_t size, size_t nmemb, struct ExeArFile* strea
 		if (stream->bytes_read + size > stream->data_size)
 			break;
 
-		fread(ptr, size, 1, stream->f);
+		if (fread(ptr, size, 1, stream->f) != 1)
+         break;
+
+		stream->bytes_read += size;
 		ptr = (char*)ptr + size;
 	}
 
@@ -312,25 +315,34 @@ int exear_fseek(struct ExeArFile* stream, long offset, int whence)
 				offset = -stream->bytes_read;
 		}
 
+		stream->bytes_read += offset;
 		return fseek(stream->f, offset, SEEK_CUR);
 	}
 	else if (whence == SEEK_SET)
 	{
+		int ret;
+
 		if (offset < 0)
 			offset = 0;
 		else if ((uint32_t)offset > stream->data_size)
 			offset = stream->data_size;
 
-		return fseek(stream->f, offset - stream->bytes_read, SEEK_CUR);
+		ret = fseek(stream->f, offset - stream->bytes_read, SEEK_CUR);
+		stream->bytes_read = offset;
+		return ret;
 	}
 	else if (whence == SEEK_END)
 	{
+		int ret;
+
 		if (offset > 0)
 			offset = 0;
 		else if ((uint32_t)(-offset) > stream->data_size)
 			offset = -(long)stream->data_size;
 
-		return fseek(stream->f, stream->data_size + offset - stream->bytes_read, SEEK_CUR);
+		ret = fseek(stream->f, stream->data_size + offset - stream->bytes_read, SEEK_CUR);
+		stream->bytes_read = stream->data_size + offset;
+		return ret;
 	}
 
 	return -1;
