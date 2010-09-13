@@ -188,7 +188,7 @@ struct ExeArInfo* exear_open(const char* fname)
 		goto error;
 	}
 
-	fseek(ar_info->f, -(int32_t)(ar_info->ar_size + file_list_size), SEEK_CUR);
+	fseek(ar_info->f, -(int32_t)(ar_info->ar_size + 4 + file_list_size), SEEK_CUR);
 	fgetpos(ar_info->f, &ar_info->data_start);
 
 	return ar_info;
