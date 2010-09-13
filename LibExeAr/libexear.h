@@ -32,6 +32,7 @@ extern "C" {
 #endif
 
 struct ExeArInfo;
+struct ExeArFile;
 
 /** Opens the executable and reads archive info from it.
  *
@@ -46,18 +47,24 @@ struct ExeArInfo* exear_open(const char* fname);
  */
 void exear_close(struct ExeArInfo* ar_info);
 
-/** Returns a FILE and the size of the data corresponding to the specified
- * path. The FILE should not be closed.
+/** Returns an ExeArInfo for reading from a file. Only one file can be open at a time.
  *
  * @param ar_info The ExeArInfo struct.
  * @param path The path of the file to open.
- * @param size Pointer to integer that will hold the size of the file.
- *             Unchanged if path isn't found.
- *
- * @return A FILE object seeked to the correct position for reading, or NULL
- *         if path wasn't found.
  */
-FILE* exear_open_file(struct ExeArInfo* ar_info, const char* path, uint32_t* size);
+struct ExeArFile* exear_open_file(struct ExeArInfo* ar_info, const char* path);
+
+/** Closes the ExeArFile handle.
+ *
+ * @param ar_info The ExeArInfo struct.
+ * @param file The file handle to close.
+ */
+void exear_close_file(struct ExeArInfo* ar_info, struct ExeArFile* file);
+
+/* C I/O equivalents for ExeArFile */
+size_t exear_fread(void *ptr, size_t size, size_t nmemb, struct ExeArFile* stream);
+int exear_fseek(struct ExeArFile* stream, long offset, int whence);
+long exear_ftell(struct ExeArFile* stream);
 
 #ifdef __cplusplus
 } /* extern "C" */

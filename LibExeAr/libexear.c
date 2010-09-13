@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-struct ExeArFile
+struct ExeArFileInfo
 {
 	char* name;
 	uint32_t offset;
@@ -46,8 +46,20 @@ struct ExeArInfo
 	fpos_t data_start;
 
 	int num_files;
-	struct ExeArFile** files;
+	struct ExeArFileInfo** files;
+
+	struct ExeArFile* open_file;
 };
+
+struct ExeArFile
+{
+	FILE* f;
+	fpos_t data_start;
+	uint32_t data_size;
+
+	long bytes_read;
+};
+
 
 #ifdef _WIN32
 	#include <Windows.h>
@@ -119,6 +131,7 @@ struct ExeArInfo* exear_open(const char* fname)
 		goto error;
 	ar_info->f = NULL;
 	ar_info->files = NULL;
+	ar_info->open_file = NULL;
 
 	if (fname == NULL) {
 		ar_info->f = exear_detect_fname();
@@ -156,11 +169,11 @@ struct ExeArInfo* exear_open(const char* fname)
 	fseek(ar_info->f, -4 -file_list_size, SEEK_CUR);
 	ar_info->num_files = read_u16(ar_info->f);
 
-	ar_info->files = (struct ExeArFile**)malloc(sizeof(*ar_info->files) * ar_info->num_files);
+	ar_info->files = (struct ExeArFileInfo**)malloc(sizeof(*ar_info->files) * ar_info->num_files);
 
 	for (i = 0; i < ar_info->num_files; ++i)
 	{
-		struct ExeArFile* file = (struct ExeArFile*)malloc(sizeof(*file));
+		struct ExeArFileInfo* file = (struct ExeArFileInfo*)malloc(sizeof(*file));
 		int fname_size = read_u16(ar_info->f);
 
 		ar_info->files[i] = file;
@@ -230,11 +243,12 @@ static uint32_t find_file_offset(struct ExeArInfo* ar_info, const char* path)
 		return -1;
 }
 
-FILE* exear_open_file(struct ExeArInfo* ar_info, const char* path, uint32_t* size)
+struct ExeArFile* exear_open_file(struct ExeArInfo* ar_info, const char* path)
 {
 	uint32_t file_off;
+	struct ExeArFile* file;
 
-	if (ar_info == NULL)
+	if (ar_info == NULL || ar_info->open_file != NULL)
 		return NULL;
 
 	file_off = find_file_offset(ar_info, path);
@@ -245,8 +259,84 @@ FILE* exear_open_file(struct ExeArInfo* ar_info, const char* path, uint32_t* siz
 	fsetpos(ar_info->f, &ar_info->data_start);
 	fseek(ar_info->f, file_off, SEEK_CUR);
 
-	*size = read_u32(ar_info->f);
-	return ar_info->f;
+	file = (struct ExeArFile*)malloc(sizeof(struct ExeArFile));
+	if (file == NULL)
+		return NULL;
+
+	file->f = ar_info->f;
+	file->data_size = read_u32(ar_info->f);
+	fgetpos(file->f, &file->data_start);
+	file->bytes_read = 0;
+
+	ar_info->open_file = file;
+
+	return file;
+}
+
+void exear_close_file(struct ExeArInfo* ar_info, struct ExeArFile* file)
+{
+	free(file);
+
+	if (ar_info != NULL)
+		ar_info->open_file = NULL;
+}
+
+size_t exear_fread(void *ptr, size_t size, size_t nmemb, struct ExeArFile* stream)
+{
+	size_t i;
+
+	for (i = 0; i < nmemb; ++i)
+	{
+		if (stream->bytes_read + size > stream->data_size)
+			break;
+
+		fread(ptr, size, 1, stream->f);
+		ptr = (char*)ptr + size;
+	}
+
+	return i;
+}
+
+int exear_fseek(struct ExeArFile* stream, long offset, int whence)
+{
+	if (whence == SEEK_CUR)
+	{
+		if (offset > 0)
+		{
+			if ((uint32_t)(stream->bytes_read + offset) > stream->data_size)
+				offset = stream->data_size - stream->bytes_read;
+		}
+		else if (offset < 0)
+		{
+			if (stream->bytes_read + offset < 0)
+				offset = -stream->bytes_read;
+		}
+
+		fseek(stream->f, offset, SEEK_CUR);
+	}
+	else if (whence == SEEK_SET)
+	{
+		if (offset < 0)
+			offset = 0;
+		else if ((uint32_t)offset > stream->data_size)
+			offset = stream->data_size;
+
+		fseek(stream->f, offset - stream->bytes_read, SEEK_CUR);
+	}
+	else if (whence == SEEK_END)
+	{
+		if (offset > 0)
+			offset = 0;
+		else if ((uint32_t)(-offset) > stream->data_size)
+			offset = -(long)stream->data_size;
+
+		fseek(stream->f, stream->data_size + offset - stream->bytes_read, SEEK_CUR);
+	}
+}
+
+long exear_ftell(struct ExeArFile* stream)
+{
+	return stream->bytes_read;
 }
 
 #ifdef __cplusplus
